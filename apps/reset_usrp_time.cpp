@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     // create USRP device
     std::string usrp_args = (boost::format("addr=%s") % addr).str();
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(usrp_args);
-    std::cout << boost::format("Using device: %s") % usrp->get_pp_string() << std::endl;
+    // std::cout << boost::format("Using device: %s") % usrp->get_pp_string() << std::endl;
 
     // read and parse USRP time
     uhd::time_spec_t usrp_time = usrp->get_time_now();

@@ -140,19 +140,7 @@ bool check_time_bidir_prox(std::chrono::system_clock::time_point tp, std::chrono
     return ((msec + thr_ms.count() >= 1000) || (msec <= thr_ms.count())) ;
 }
 
-// return a string in s.uuuuuu format for the provided time spec
-const std::string timespec_str(uhd::time_spec_t t)
-{
-    return str(boost::format("%.06f") % t.get_real_secs());
-}
 
-const std::string systime_str(std::chrono::system_clock::time_point t)
-{
-    using namespace std::chrono;
-    auto sec = duration_cast<seconds>(t.time_since_epoch()).count();
-    auto usec = duration_cast<microseconds>(t.time_since_epoch()).count() % 1000000;
-    return (boost::format("%u.%06u") % sec % usec).str();
-}
 
 bool attempt_ntp_pps_sync(uhd::usrp::multi_usrp::sptr usrp)
 {
@@ -284,8 +272,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
     }
 
-    std::cout << "sync complete" <<std::endl;
-
+    std::cout << boost::format("[%s] synced usrp time: %.6lf") % systime_str(std::chrono::system_clock::now()) % timespec_str(usrp->get_time_now()) << std::endl;
+    
     // // verify things were proerly set up afterwards
     // // all subsequent last_pps values should have exact zeros for fractional 
     // uhd::time_spec_t t_usrp;
@@ -325,8 +313,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
     }
 
-    double timeout = 0.5 + double(total_num_samps)/rate;  // additional 0.5 sec slack provided as slack
-    #define recv_to_file_args(format) \
+    double timeout = 0.5;  // timeout per call
+    #define timed_recv_to_file_args(format) \
         (usrp,                        \
          format,                   \
          wirefmt,                  \
@@ -334,7 +322,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
          file,                     \
          spb,                      \
          total_num_samps,          \
-         stop_signal_called,       \
+         t0,       \
          timeout,               \
          bw_summary,               \
          stats,                    \
@@ -345,20 +333,20 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     // recv to file
     if (wirefmt == "s16") {
         if (type == "double")
-            recv_to_file<double> recv_to_file_args("f64");
+            timed_recv_to_file<double> timed_recv_to_file_args("f64");
         else if (type == "float")
-            recv_to_file<float> recv_to_file_args("f32");
+            timed_recv_to_file<float> timed_recv_to_file_args("f32");
         else if (type == "short")
-            recv_to_file<short> recv_to_file_args("s16");
+            timed_recv_to_file<short> timed_recv_to_file_args("s16");
         else
             throw std::runtime_error("Unknown type " + type);
     } else {
         if (type == "double")
-            recv_to_file<std::complex<double>> recv_to_file_args("fc64");
+            timed_recv_to_file<std::complex<double>> timed_recv_to_file_args("fc64");
         else if (type == "float")
-            recv_to_file<std::complex<float>> recv_to_file_args("fc32");
+            timed_recv_to_file<std::complex<float>> timed_recv_to_file_args("fc32");
         else if (type == "short")
-            recv_to_file<std::complex<short>> recv_to_file_args("sc16");
+            timed_recv_to_file<std::complex<short>> timed_recv_to_file_args("sc16");
         else
             throw std::runtime_error("Unknown type " + type);
     }

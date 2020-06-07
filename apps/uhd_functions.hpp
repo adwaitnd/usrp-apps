@@ -26,6 +26,20 @@ double timepoint2double(std::chrono::time_point<Clock> tp)
     return ddouble.count();
 }
 
+// return a string in s.uuuuuu format for the provided time spec
+const std::string timespec_str(uhd::time_spec_t t)
+{
+    return str(boost::format("%.06f") % t.get_real_secs());
+}
+
+const std::string systime_str(std::chrono::system_clock::time_point t)
+{
+    using namespace std::chrono;
+    auto sec = duration_cast<seconds>(t.time_since_epoch()).count();
+    auto usec = duration_cast<microseconds>(t.time_since_epoch()).count() % 1000000;
+    return (boost::format("%u.%06u") % sec % usec).str();
+}
+
 template <typename samp_type>
 void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     const std::string& cpu_format,
@@ -212,22 +226,30 @@ void timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
     typedef std::map<size_t, size_t> SizeMap;
     SizeMap mapSizes;
-    const auto start_time = std::chrono::system_clock::now();
-    const auto stop_time =
-        start_time + std::chrono::duration<double>(timeout);
+    const auto start_time = double2timepoint<std::chrono::system_clock> (t0);
+    const auto stop_time = start_time + std::chrono::duration<double>(timeout);
     // Track time and samps between updating the BW summary
     auto last_update                     = start_time;
     unsigned long long last_update_samps = 0;
 
+    // calculate timeout of first recv call
+    auto now = std::chrono::system_clock::now();
+    auto tnow_double = timepoint2double<std::chrono::system_clock>(now);
+    double recv_to = t0 - tnow_double + timeout;
+
+    std::cout << boost::format("[%s] requesting capture at %.06lf") % systime_str(now) % t0<< std::endl;
     // Run this loop until either time expired (if a duration was given), until
     // the requested number of samples were collected (if such a number was
     // given), or until Ctrl-C was pressed.
     while (num_requested_samples != num_total_samps and std::chrono::system_clock::now() <= stop_time )
     {
-        const auto now = std::chrono::system_clock::now();
+        now = std::chrono::system_clock::now();
 
         size_t num_rx_samps =
-            rx_stream->recv(&buff.front(), buff.size(), md, 3.0, enable_size_map);
+            rx_stream->recv(&buff.front(), buff.size(), md, recv_to, enable_size_map);
+
+        // recieve timeout for all subsequent packets should be relatively short
+        recv_to = timeout;
 
         if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
             std::cout << boost::format("Timeout while streaming") << std::endl;

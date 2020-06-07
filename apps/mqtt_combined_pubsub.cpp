@@ -209,6 +209,7 @@ void mqtt_pubsub_ops(
 	
 }
 
+// TODO: replace this with the usrp processing thread
 void dummyProcessor(ProtectedQ<std::string> *fromNetwork, ProtectedQ<std::string> *toNetwork)
 {
 	std::string rxMsg, txMsg;

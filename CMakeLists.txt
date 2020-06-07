@@ -57,8 +57,12 @@ target_link_libraries(sync_consume ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES
 
 # UHD example for recording samples into a file
 add_executable(rx_samples_to_file apps/rx_samples_to_file.cpp)
-target_include_directories(rx_samples_to_file PRIVATE ${uhd_include} ${Boost_INCLUDE_DIRS})
+target_include_directories(rx_samples_to_file PRIVATE ${uhd_include} ${Boost_INCLUDE_DIRS} apps)
 target_link_libraries(rx_samples_to_file ${uhd_lib} ${Boost_LIBRARIES})
+add_custom_command(TARGET rx_samples_to_file POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                    ${CMAKE_SOURCE_DIR}/apps/run_rx_samples_to_file.sh
+                    ${CMAKE_CURRENT_BINARY_DIR}/run_rx_samples_to_file.sh)
 
 # UHD read usrp and system time
 add_executable(read_usrp_time apps/read_usrp_time.cpp)
@@ -71,21 +75,14 @@ target_include_directories(reset_usrp_time PRIVATE ${uhd_include} ${Boost_INCLUD
 target_link_libraries(reset_usrp_time ${uhd_lib} ${Boost_LIBRARIES})
 
 # simple application to quickly test out random things
-add_executable(debug_test apps/debug_test.cpp)
 add_executable(str_parse apps/str_parse.cpp)
 add_executable(time_point_conversion apps/time_point_conversion.cpp)
 target_include_directories(time_point_conversion PRIVATE ${uhd_include} ${Boost_INCLUDE_DIRS})
 target_link_libraries(time_point_conversion ${uhd_lib} ${Boost_LIBRARIES})
 
 add_executable(mqtt_combined_pubsub apps/mqtt_combined_pubsub.cpp)
-target_include_directories(mqtt_combined_pubsub PRIVATE ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+target_include_directories(mqtt_combined_pubsub PRIVATE ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} apps)
 target_link_libraries(mqtt_combined_pubsub ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES} pthread)
-
-add_custom_command(TARGET mqtt_combined_pubsub POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy
-                    ${CMAKE_SOURCE_DIR}/apps/run_stuff.sh
-                    ${CMAKE_CURRENT_BINARY_DIR}/run_stuff.sh)
-
 
 # testing if killing the process kills all threads. Ans: yes!
 add_executable(multi_thread_test apps/multi_thread_test.cpp)
@@ -97,3 +94,11 @@ add_executable(mqttpp_chat apps/mqttpp_chat.cpp)
 target_include_directories(mqttpp_chat PRIVATE ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 target_link_libraries(mqttpp_chat ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES} pthread)
 
+# UHD example for recording samples into a file
+add_executable(rx_timed_samples_to_file apps/rx_timed_samples_to_file.cpp)
+target_include_directories(rx_samples_to_file PRIVATE ${uhd_include} ${Boost_INCLUDE_DIRS} apps)
+target_link_libraries(rx_timed_samples_to_file ${uhd_lib} ${Boost_LIBRARIES})
+add_custom_command(TARGET rx_timed_samples_to_file POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                    ${CMAKE_SOURCE_DIR}/apps/run_rx_timed_samples_to_file.sh
+                    ${CMAKE_CURRENT_BINARY_DIR}/run_rx_timed_samples_to_file.sh)

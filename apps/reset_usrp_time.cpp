@@ -21,8 +21,8 @@ int main(int argc, char* argv[])
     desc.add_options()
         ("help", "help message")
         ("nowarn", "disable USRP warnings")
-        ("addr", po::value<std::string>(&addr)->default_value("192.168.10.3"), "IP address of the USRP"), 
-        ("time", po::value<double>(&t0)->default_value(0.0), "reset time")
+        ("addr", po::value<std::string>(&addr)->default_value("192.168.10.3"), "IP address of the USRP")
+        ("time", po::value<double>(&t0)->default_value(0), "reset time")
     ;
 
     // register program options
@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
     if(vm.count("help"))
     {
         std::cout << desc << std::endl;
+        exit(0);
     }
 
     if(vm.count("nowarn"))
@@ -53,7 +54,7 @@ int main(int argc, char* argv[])
     auto usrp_usec = int(usrp_time.get_frac_secs()*1000000);
     std::cout << boost::format("usrp time before: %d.%06d\n") % usrp_sec % usrp_usec;
 
-
+    std::cout << "set time to " << t0 <<std::endl;
     uhd::time_spec_t tspec0(t0);
     usrp->set_time_now(tspec0);
 

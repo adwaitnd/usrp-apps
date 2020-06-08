@@ -1,3 +1,6 @@
+#ifndef PROTECTED_Q_HPP
+#define PROTECTED_Q_HPP
+
 #include <thread>
 #include <queue>
 #include <condition_variable>
@@ -39,3 +42,5 @@ class ProtectedQ
             return val;
         }
 };
+
+#endif // PROTECTED_Q_HPP

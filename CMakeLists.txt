@@ -102,3 +102,12 @@ add_custom_command(TARGET rx_timed_samples_to_file POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy
                     ${CMAKE_SOURCE_DIR}/apps/run_rx_timed_samples_to_file.sh
                     ${CMAKE_CURRENT_BINARY_DIR}/run_rx_timed_samples_to_file.sh)
+
+# USRP record to file on receiving trigger/instructions over MQTT
+add_executable(timed_rx_file_mqtt apps/timed_rx_file_mqtt/main.cpp apps/timed_rx_file_mqtt/mqtt_ops.cpp apps/timed_rx_file_mqtt/usrp_ops.cpp)
+target_include_directories(timed_rx_file_mqtt PRIVATE ${uhd_include} ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} apps/timed_rx_file_mqtt)
+target_link_libraries(timed_rx_file_mqtt ${uhd_lib} ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES} pthread)
+add_custom_command(TARGET timed_rx_file_mqtt POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                    ${CMAKE_SOURCE_DIR}/apps/timed_rx_file_mqtt/run_timed_rx_file_mqtt.sh
+                    ${CMAKE_CURRENT_BINARY_DIR}/run_timed_rx_file_mqtt.sh)

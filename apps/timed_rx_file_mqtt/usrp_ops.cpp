@@ -169,10 +169,19 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
     // meta-data will be filled in by recv()
     uhd::rx_metadata_t md;
-    std::vector<samp_type> buff(samps_per_buff);
     std::ofstream outfile;
     if (not null)
+    {
         outfile.open(file.c_str(), std::ofstream::binary);
+        // sometimes opening the file can fail if the file system sees
+        // weird characters. Explicitly fail if this happens
+        if(outfile.is_open() == false)
+        {
+            std::cerr << boost::format("Could not open/create file %s") % file <<std::endl;
+            return false;
+        }
+    }
+    std::vector<samp_type> buff(samps_per_buff);
 
     // setup streaming
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
@@ -539,7 +548,7 @@ void usrp_ops(
 
         // TODO: parse all request parameters
         const auto trequest = double2timepoint<std::chrono::system_clock>(tstart);
-        const auto datestr = date::format("%F-%T", std::chrono::time_point_cast<std::chrono::milliseconds>(trequest));
+        const auto datestr = date::format("%F_%H-%M-%S", std::chrono::time_point_cast<std::chrono::milliseconds>(trequest));
         std::string rx_filename = (boost::format("%s%.3lfM_%s.dat")
                         % params->file_prefix
                         % (fc/1e6)

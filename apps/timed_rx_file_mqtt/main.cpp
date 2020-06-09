@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         ("ntpslack", po::value<double>(&ntpslack)->default_value(0.1), "slack allowed between NTP and GPS time")
         ("spb", po::value<size_t>(&samp_per_buf)->default_value(10000), "samples per buffer")
         ("wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")
-        ("type", po::value<std::string>(&datafmt)->default_value("short"), "sample type: double, float, or short")
+        ("datafmt", po::value<std::string>(&datafmt)->default_value("short"), "sample type: double, float, or short")
         ("int-n", "tune USRP with integer-N tuning")
     ;
 

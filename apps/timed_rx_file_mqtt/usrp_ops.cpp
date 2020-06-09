@@ -12,8 +12,11 @@
 #include <chrono>
 #include <complex>
 #include <fstream>
+#include <cstdio>
 #include <thread>
+#include <string>
 #include "ops_helper.hpp"
+#include "date.h"
 
 template <typename Clock>
 std::chrono::time_point<Clock, std::chrono::duration<double>> double2timepoint(double t)
@@ -60,7 +63,7 @@ bool check_locked_sensor(std::vector<std::string> sensor_names,
                          + std::chrono::milliseconds(int64_t(setup_time * 1000));
     bool lock_detected = false;
 
-    std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
+    std::cout << boost::format("[UHDdebug] Waiting for \"%s\": ") % sensor_name;
     std::cout.flush();
 
     while (true) {
@@ -119,7 +122,7 @@ uhd::usrp::multi_usrp::sptr create_device(
 {
     // create a usrp device
     std::cout << std::endl;
-    std::cout << boost::format("Creating the usrp device with: %s...") % args
+    std::cout << boost::format("[UHDdebug] Creating usrp dev: %s...") % args
               << std::endl;
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -137,7 +140,7 @@ uhd::usrp::multi_usrp::sptr create_device(
     if (subdev != "")
         usrp->set_rx_subdev_spec(subdev);
 
-    std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
+    std::cout << boost::format("[UHDdebug] Using Device: %s") % usrp->get_pp_string() << std::endl;
 
     return usrp;
 }
@@ -170,7 +173,15 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<samp_type> buff(samps_per_buff);
     std::ofstream outfile;
     if (not null)
+    {
+        std::cout << "[UHDdebug] creating/opening file" << std::endl;
         outfile.open(file.c_str(), std::ofstream::binary);
+    } else
+    {
+        std::cout << "[UHDdebug] skipping save file" << std::endl;
+    }
+    
+        
 
     // setup streaming
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
@@ -214,9 +225,7 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
         }
         if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW)
         {
-                std::cerr
-                    << boost::format("Could not sustain write rate of %fMB/s\n")
-                           % (usrp->get_rx_rate(channel) * sizeof(samp_type) / 1e6);
+            std::cerr<< boost::format("Could not sustain write rate of %fMB/s\n") % (usrp->get_rx_rate(channel) * sizeof(samp_type) / 1e6);
             break;
         }
         if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_LATE_COMMAND)
@@ -266,6 +275,7 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
     if (outfile.is_open()) {
         outfile.close();
+        std::cout << "[UHDdebug] outfile closed" << std::endl;
     }
 
     if (stats) {
@@ -402,6 +412,13 @@ bool process_rx_request(
         ret = timed_recv_to_file<std::complex<short>> timed_recv_to_file_args("sc16");
     else
         throw std::runtime_error("Unknown type " + cpu_format);
+
+    if (ret == false)
+    {  
+        std::cout << "[UHDdebug] USRP rx error. Removing file " << file << std::endl;
+        std::remove(file.c_str());
+    }
+
     return ret;
 }
 
@@ -488,25 +505,12 @@ void usrp_ops(
                 ProtectedQ<std::string> *toNetwork,
                 ProtectedQ<std::string> *fromNetwork)
 {
-    
-
-    // while(true)
-    // {
-    //     
-
-    //     // wait on message
-
-    // }
-
-    std::cout << "[UHDdebug] USRP thread created" << std::endl;
-    std::string rxmsg;
-    std::string txmsg;
-    
-    
     size_t n_samples;
     double fc, lo_off, sps, ifbw, gain, tstart;
-    char antc[64], formatc[64];
+    char antc[32];
     int n_decoded;
+
+    std::cout << "[UHDdebug] USRP thread created" << std::endl;
 
     uhd::usrp::multi_usrp::sptr usrp = create_device(
         params->args,
@@ -518,15 +522,16 @@ void usrp_ops(
     while(true)
     {
         // double check that're we are within the time sync bound for
-        //     // every processed operation
-        //     sync_usrp_ntp(usrp, params->ntpslack);
+        // every processed operation
+        sync_usrp_ntp(usrp, params->ntpslack);
 
         // wait for new request
-        rxmsg = fromNetwork->popItem();
+        std::string rxmsg = fromNetwork->popItem();
+        std::cout << "[UHDdebug] request recvd" << std::endl;
 
         // parse request
-        n_decoded = std::scanf(rxmsg.c_str(),
-        "fc=%lf,lo=%lf,sps=%lf,bw=%lf,g=%lf,t0=%lf,n=%zu,ant=%[^,],form=%[^,]",
+        n_decoded = std::sscanf(rxmsg.c_str(),
+        "fc=%lf,lo=%lf,sps=%lf,bw=%lf,g=%lf,t0=%lf,n=%zu,ant=%[^,]",
             &fc,
             &lo_off,
             &sps,
@@ -534,23 +539,79 @@ void usrp_ops(
             &gain,
             &tstart,
             &n_samples,
-            antc,
-            formatc);
-
+            antc);
+        
         // check if request is valid, if not, start loop from the top
         // validity is based on format
-        if(n_decoded != 9)
+        if(n_decoded != 8)
         {
-            txmsg = str(boost::format("%s invalid msg") % params->client_id);
+            std::string txmsg = str(boost::format("<%s invalid msg>") % params->client_id);
             toNetwork->addItem(txmsg);
+            std::cout << txmsg << std::endl;
             continue;
         }
 
-        // TODO: 
+        // TODO: parse all request parameters
+        const auto trequest = double2timepoint<std::chrono::system_clock>(tstart);
+        const auto datestr = date::format("%F-%T", std::chrono::time_point_cast<std::chrono::milliseconds>(trequest));
+        std::string rx_filename = (boost::format("%s%.3lfM_%s.dat")
+                        % params->file_prefix
+                        % (fc/1e6)
+                        % datestr
+                        ).str();
 
-        // TODO: if request is valid, parse it
+        // Check if the request was too late
+        double tnow_double = timepoint2double<std::chrono::system_clock>(std::chrono::system_clock::now());
+        // in the worst case, NTP time lags GPS PPS and setup takes max slack time
+        // error on: tnow + ntp_error + slack_time > tstart
+        if((tnow_double + params->ntpslack + params->tslack) > tstart)
+        {
+            std::string txmsg = (boost::format("<%s host late command @%s>") % params->client_id % datestr).str();
+            toNetwork->addItem(txmsg);
+            std::cout << txmsg << std::endl;
+            continue;
+        }
 
-        // TODO: check if request was too late
+        std::cout << "saving to file: " << rx_filename;
+
+        bool ret = process_rx_request(
+                    usrp,
+                    params->channel,
+                    std::string(antc),
+                    rx_filename,
+                    fc,
+                    lo_off,
+                    sps,
+                    true,
+                    gain,
+                    true,
+                    ifbw,
+                    tstart,
+                    n_samples,
+                    0.5,
+                    params->datafmt,
+                    params->wirefmt,
+                    params->spb,
+                    params->tslack,
+                    params->intn_flag,
+                    true,
+                    true,
+                    false,
+                    false);
+
+        if(ret)
+        {
+            std::string txmsg = (boost::format("<%s req saved %s>") % params->client_id % rx_filename).str();
+            toNetwork->addItem(txmsg);
+            std::cout << txmsg << std::endl;
+        } else
+        {
+            std::string txmsg = (boost::format("<%s req failed @ %s>") % params->client_id % datestr).str();
+            toNetwork->addItem(txmsg);
+            std::cout << txmsg << std::endl;
+        }
+        
+
     }
 
 }

@@ -55,7 +55,7 @@ Build a custom port of the UHD library and installs it to a local `~/install` fo
     mkdir uhd/host/build
     cd uhd/host/build
     cmake ..
-    make
+    make uhd
     make DESTDIR=~/install install
 
 ## compiling applications in this repository
@@ -63,7 +63,7 @@ Build a custom port of the UHD library and installs it to a local `~/install` fo
     git clone https://github.com/adwaitnd/usrp-apps.git
     mkdir usrp-apps/build
     cd usrp-apps/build
-    cmake ..
+    cmake -DCMAKE_PREFIX_PATH=~/install/usr/local ..
     make
 
 ## VSCode CMake Tools configurations

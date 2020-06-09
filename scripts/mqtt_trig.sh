@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-mqttserv="localhost"
+mqttserv="spatial.andrew.cmu.edu"
 pubtop="usrp/command"
 
 # fc=%lf,lo=%lf,sps=%lf,bw=%lf,g=%lf,t0=%lf,n=%zu,ant=%[^,]

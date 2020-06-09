@@ -68,7 +68,7 @@ bool check_locked_sensor(std::vector<std::string> sensor_names,
 
     while (true) {
         if (lock_detected or (std::chrono::steady_clock::now() > setup_timeout)) {
-            std::cout << " locked." << std::endl;
+            std::cout << " locked.";
             break;
         }
         if (get_sensor_fn(sensor_name).to_bool()) {
@@ -121,7 +121,6 @@ uhd::usrp::multi_usrp::sptr create_device(
     const std::string subdev = "")
 {
     // create a usrp device
-    std::cout << std::endl;
     std::cout << boost::format("[UHDdebug] Creating usrp dev: %s...") % args
               << std::endl;
     uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
@@ -173,15 +172,7 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<samp_type> buff(samps_per_buff);
     std::ofstream outfile;
     if (not null)
-    {
-        std::cout << "[UHDdebug] creating/opening file" << std::endl;
         outfile.open(file.c_str(), std::ofstream::binary);
-    } else
-    {
-        std::cout << "[UHDdebug] skipping save file" << std::endl;
-    }
-    
-        
 
     // setup streaming
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
@@ -206,7 +197,7 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     double recv_to = stop_time_double - tnow_double;
 
 
-    std::cout << boost::format("[%s] requesting capture at %.06lf") % systime_str(now) % t0<< std::endl;
+    std::cout << boost::format("[UHDdebug][%s] requesting capture at %.06lf") % systime_str(now) % t0<< std::endl;
 
     // Run this loop until either time expired (if a duration was given), until
     // the requested number of samples were collected (if such a number was
@@ -275,23 +266,17 @@ bool timed_recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
     if (outfile.is_open()) {
         outfile.close();
-        std::cout << "[UHDdebug] outfile closed" << std::endl;
     }
 
     if (stats) {
-        std::cout << std::endl;
         const double actual_duration_seconds =
             std::chrono::duration<float>(actual_stop_time - start_time).count();
-
-        std::cout << boost::format("Received %d samples in %f seconds") % num_total_samps
-                         % actual_duration_seconds
-                  << std::endl;
         const double rate = (double)num_total_samps / actual_duration_seconds;
-        std::cout << (rate / 1e6) << " Msps" << std::endl;
-
+        std::cout << boost::format("[UHDdebug] Received %d samples in %f sec @ %.6lf Msps") % num_total_samps % actual_duration_seconds % (rate/1e6) << std::endl;
+        
         if (enable_size_map) {
             std::cout << std::endl;
-            std::cout << "Packet size map (bytes: count)" << std::endl;
+            std::cout << "[UHDdebug] Packet size map (bytes: count)" << std::endl;
             for (SizeMap::iterator it = mapSizes.begin(); it != mapSizes.end(); it++)
                 std::cout << it->first << ":\t" << it->second << std::endl;
         }
@@ -308,11 +293,10 @@ void set_sample_rate(uhd::usrp::multi_usrp::sptr usrp, double rate, size_t chann
         std::cerr << "Please specify a valid sample rate" << std::endl;
         exit(~0);
     }
-    std::cout << boost::format("Setting RX Rate: %f Msps...") % (rate / 1e6) << std::endl;
+    std::cout << boost::format("[UHDdebug] Setting RX Rate: %f Msps...") % (rate / 1e6) << std::endl;
     usrp->set_rx_rate(rate, channel);
-    std::cout << boost::format("Actual RX Rate: %f Msps...")
+    std::cout << boost::format("[UHDdebug] Actual RX Rate: %f Msps...")
                      % (usrp->get_rx_rate(channel) / 1e6)
-              << std::endl
               << std::endl;
 }
 
@@ -320,9 +304,9 @@ void set_fc(uhd::usrp::multi_usrp::sptr usrp, size_t channel, double freq, doubl
 {
 
     // set the center frequency
-        std::cout << boost::format("Setting RX Freq: %f MHz...") % (freq / 1e6)
+        std::cout << boost::format("[UHDdebug] Setting RX Freq: %f MHz...") % (freq / 1e6)
                   << std::endl;
-        std::cout << boost::format("Setting RX LO Offset: %f MHz...") % (lo_offset / 1e6)
+        std::cout << boost::format("[UHDdebug] Setting RX LO Offset: %f MHz...") % (lo_offset / 1e6)
                   << std::endl;
         uhd::tune_request_t tune_request(freq, lo_offset);
         if (useIntN)
@@ -330,14 +314,14 @@ void set_fc(uhd::usrp::multi_usrp::sptr usrp, size_t channel, double freq, doubl
             tune_request.args = uhd::device_addr_t("mode_n=integer");
         }
         usrp->set_rx_freq(tune_request, channel);
-        std::cout << boost::format("Actual RX Freq: %f MHz...") % (usrp->get_rx_freq(channel) / 1e6) << std::endl;
+        std::cout << boost::format("[UHDdebug] Actual RX Freq: %f MHz...") % (usrp->get_rx_freq(channel) / 1e6) << std::endl;
 }
     
 void set_gain(uhd::usrp::multi_usrp::sptr usrp, size_t channel, double gain)
 {
-    std::cout << boost::format("Setting RX Gain: %f dB...") % gain << std::endl;
+    std::cout << boost::format("[UHDdebug] Setting RX Gain: %f dB...") % gain << std::endl;
     usrp->set_rx_gain(gain, channel);
-    std::cout << boost::format("Actual RX Gain: %f dB...")
+    std::cout << boost::format("[UHDdebug] Actual RX Gain: %f dB...")
                         % usrp->get_rx_gain(channel)
                 << std::endl;
 }
@@ -345,10 +329,10 @@ void set_gain(uhd::usrp::multi_usrp::sptr usrp, size_t channel, double gain)
 void set_ifbw(uhd::usrp::multi_usrp::sptr usrp, size_t channel, double bw)
 {    
     // set the IF filter bandwidth
-    std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % (bw / 1e6)
+    std::cout << boost::format("[UHDdebug] Setting RX Bandwidth: %f MHz...") % (bw / 1e6)
                 << std::endl;
     usrp->set_rx_bandwidth(bw, channel);
-    std::cout << boost::format("Actual RX Bandwidth: %f MHz...") % (usrp->get_rx_bandwidth(channel) / 1e6) << std::endl;
+    std::cout << boost::format("[UHDdebug] Actual RX Bandwidth: %f MHz...") % (usrp->get_rx_bandwidth(channel) / 1e6) << std::endl;
 }
 
 bool process_rx_request(
@@ -484,7 +468,7 @@ bool attempt_ntp_pps_sync(uhd::usrp::multi_usrp::sptr usrp)
         int64_t(duration_cast<seconds>(t_nextsec.time_since_epoch()).count() + 1), 
         0.0);
     usrp->set_time_unknown_pps(nextpps);
-    std::cout << boost::format("[%s] setting time to %s") % systime_str(t_now) % timespec_str(nextpps) << std::endl;
+    std::cout << boost::format("[UHDdebug][%s] setting time to %s") % systime_str(t_now) % timespec_str(nextpps) << std::endl;
 }
 
 void sync_usrp_ntp(uhd::usrp::multi_usrp::sptr usrp, double sync_slack)
@@ -497,7 +481,7 @@ void sync_usrp_ntp(uhd::usrp::multi_usrp::sptr usrp, double sync_slack)
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
     }
 
-    std::cout << boost::format("[%s] synced usrp time: %.6lf") % systime_str(std::chrono::system_clock::now()) % timespec_str(usrp->get_time_now()) << std::endl;
+    std::cout << boost::format("[UHDdebug][%s] synced usrp time: %.6lf") % systime_str(std::chrono::system_clock::now()) % timespec_str(usrp->get_time_now()) << std::endl;
 }
 
 void usrp_ops(
@@ -524,6 +508,8 @@ void usrp_ops(
         // double check that're we are within the time sync bound for
         // every processed operation
         sync_usrp_ntp(usrp, params->ntpslack);
+
+        std::cout << "[UHDdebug] ===== waiting for request =====" << std::endl;
 
         // wait for new request
         std::string rxmsg = fromNetwork->popItem();
@@ -572,8 +558,6 @@ void usrp_ops(
             continue;
         }
 
-        std::cout << "saving to file: " << rx_filename;
-
         bool ret = process_rx_request(
                     usrp,
                     params->channel,
@@ -588,7 +572,7 @@ void usrp_ops(
                     ifbw,
                     tstart,
                     n_samples,
-                    0.5,
+                    params->ntpslack,
                     params->datafmt,
                     params->wirefmt,
                     params->spb,

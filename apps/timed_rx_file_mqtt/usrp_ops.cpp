@@ -436,7 +436,7 @@ bool check_time_bidir_prox(std::chrono::system_clock::time_point tp, std::chrono
     return ((msec + thr_ms.count() >= 1000) || (msec <= thr_ms.count())) ;
 }
 
-bool attempt_ntp_pps_sync(uhd::usrp::multi_usrp::sptr usrp)
+void attempt_ntp_pps_sync(uhd::usrp::multi_usrp::sptr usrp)
 {
     using namespace std::chrono;
 

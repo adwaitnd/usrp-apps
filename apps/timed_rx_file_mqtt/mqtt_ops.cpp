@@ -54,7 +54,7 @@ class CallbackHelper : public virtual mqtt::callback,
 	// Another way this can be done manually, if using the same options, is
 	// to just call the async_client::reconnect() method.
 	void reconnect() {
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		try {
 			cli_.connect(connOpts_, nullptr, *this);
 		}
@@ -152,8 +152,9 @@ void mqtt_pubsub_ops(
 {
 	// create MQTT objects
 	mqtt::connect_options connOpts;
-	connOpts.set_keep_alive_interval(5);
+	connOpts.set_keep_alive_interval(30);
 	connOpts.set_clean_session(true);
+	std::cout << "[MQTTdebug] connection timeout: " << connOpts.get_connect_timeout().count() << std::endl;
 
 	// create will message
 	auto lwt = mqtt::make_message(params->pubtopic, "<<<"+params->userid+" disconnected>>>", QOS, false);

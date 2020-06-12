@@ -43,6 +43,7 @@ class CallbackHelper : public virtual mqtt::callback,
 	// Options to use if we need to reconnect
 	mqtt::connect_options& connOpts_;
 
+	std::string pubTopic;
 	std::string subTopic;
 	ProtectedQ<std::string> *fromNetQ;
 
@@ -79,13 +80,14 @@ class CallbackHelper : public virtual mqtt::callback,
 	// (Re)connection success
 	void connected(const std::string& cause) override {
 		std::cout << "\n[MQTTdebug] Connection success" << std::endl;
-
-		std::cout << "[MQTTdebug] Subscribing to topic " << subTopic << std::endl;
+		std::string on_msg = (boost::format("<<<%s connected>>>") % cli_.get_client_id()).str();
+		cli_.publish(pubTopic, on_msg.c_str());
 		// // new but undocumented method found in the mqttpp_chat sample
 		// mqtt::topic topic { cli_, subTopic, QOS };
 		// auto subOpts = mqtt::subscribe_options(NO_LOCAL);
 		// topic.subscribe(subOpts);
 		
+		std::cout << "[MQTTdebug] Subscribing to topic " << subTopic << std::endl;
 		// method in the examples and documentation
 		cli_.subscribe(subTopic, QOS);
 	}
@@ -116,8 +118,14 @@ class CallbackHelper : public virtual mqtt::callback,
 	}
 
 public:
-	CallbackHelper(mqtt::async_client& cli, mqtt::connect_options& connOpts, std::string subscribeTopic, ProtectedQ<std::string> *fromNetwork)
+	CallbackHelper(
+		mqtt::async_client& cli,
+		mqtt::connect_options& connOpts,
+		std::string publishTopic,
+		std::string subscribeTopic,
+		ProtectedQ<std::string> *fromNetwork)
 				: nretry_(0), cli_(cli), connOpts_(connOpts) {
+					pubTopic = publishTopic;
 					subTopic = subscribeTopic;
 					fromNetQ = fromNetwork;
 				}
@@ -144,15 +152,16 @@ void mqtt_pubsub_ops(
 {
 	// create MQTT objects
 	mqtt::connect_options connOpts;
-	connOpts.set_keep_alive_interval(20);
+	connOpts.set_keep_alive_interval(5);
 	connOpts.set_clean_session(true);
 
 	// create will message
-	auto lwt = mqtt::make_message(params->pubtopic, "<<<"+params->userid+" was disconnected>>>", QOS, false);
+	auto lwt = mqtt::make_message(params->pubtopic, "<<<"+params->userid+" disconnected>>>", QOS, false);
 	connOpts.set_will_message(lwt);
 
 	mqtt::async_client client(params->server, params->userid);
-	CallbackHelper cb(client, connOpts, params->subtopic, fromNetwork);
+	CallbackHelper cb(client, connOpts,
+						params->pubtopic, params->subtopic, fromNetwork);
 	client.set_callback(cb);
 
 	// try connecting  to server and subscribing to topic

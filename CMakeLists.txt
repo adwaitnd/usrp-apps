@@ -56,6 +56,11 @@ add_executable(mqtt_combined_pubsub apps/mqtt_combined_pubsub.cpp)
 target_include_directories(mqtt_combined_pubsub PRIVATE ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} apps)
 target_link_libraries(mqtt_combined_pubsub ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES} pthread)
 
+# simple MQTT publishing example from paho examples
+add_executable(topic_publish apps/topic_publish.cpp)
+target_include_directories(topic_publish PRIVATE ${paho_c_INCLUDE_DIRS} ${paho_cpp_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} apps)
+target_link_libraries(topic_publish ${paho_cpp} ${paho_c_async} ${Boost_LIBRARIES} pthread)
+
 # record samples from GPS/PPS synced USRP at precise time in future
 add_executable(rx_timed_samples_to_file apps/rx_timed_samples_to_file.cpp)
 target_include_directories(rx_timed_samples_to_file PRIVATE ${uhd_include} ${Boost_INCLUDE_DIRS} apps)

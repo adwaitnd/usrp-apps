@@ -103,7 +103,7 @@ Message format to send on the MQTT trigger topic to start a capture:
 - n: number of samples to capture (int)
 - ant: antenna to use (string)
 
-Check `scripts/mqtt_trig_*.sh` for examples on triggering a capture using mosquitto_pub.
+Check `scripts/mqtt_trig_*.sh` for examples on triggering a capture using mosquitto_pub.`
 
 ## Other
 
@@ -115,3 +115,10 @@ add the following entry in your `.vscode/settings.json` file
     "cmake.configureSettings": {
             "CMAKE_PREFIX_PATH":"~/install/usr/local"
         }
+
+
+## Relevant repositories
+
+- MBED code for transmit-only SX1262 client that is used for experiments [https://github.com/adwaitnd/sx1262-tx] or [https://os.mbed.com/users/adwaitnd/code/SX126X_TXonly/]
+- USRP synchronous data capture application [https://github.com/adwaitnd/usrp-apps]
+- Tools to analyze USRP LoRa captures and to work with ray tracing simulation outputs [https://github.com/adwaitnd/lpwan-sdr-analysis]
